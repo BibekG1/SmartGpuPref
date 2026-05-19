@@ -1,5 +1,5 @@
 
-# 🎮 SmartGpuPref v1.0
+# 🎮 SmartGpuPref for Windows 11
 **Auto-configure Windows Graphics GPU preference for installed apps**  
 *Interactive installer lets you choose scope, inclusion level, and performance mode. Scans Win32 apps, UWP apps, and services → sets GPU preference → runs weekly to catch new installs.*
 
