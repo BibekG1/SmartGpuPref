@@ -1,8 +1,6 @@
-# SmartGpuPref v1.1 - Auto-configure Windows Graphics GPU preference
-# Based on your original logic + enhanced with parameters and reliable logging.
-# NO EMOJIS INSIDE STRINGS to prevent PowerShell parser corruption.
+# SmartGpuPref v1.2 - Auto-configure Windows Graphics GPU preference
+# Based on your original logic. Fixed parameter collisions & added reliable logging.
 
-[CmdletBinding()]
 param(
     [ValidateSet("CurrentUser", "AllUsers")]
     [string]$Scope = "CurrentUser",
@@ -11,21 +9,20 @@ param(
     [ValidateSet(1,2)]
     [int]$Preference = 2,
     [string]$LogFile = "$env:TEMP\SmartGpuPref.log",
-    [switch]$DryRun,
-    [switch]$Verbose
+    [switch]$DryRun
 )
 
-# Reliable logging function
+# Initialize log file
+Set-Content -Path $LogFile -Value "=== SmartGpuPref Run: $(Get-Date) ===" -Force -ErrorAction SilentlyContinue
+
 function Write-Log {
     param([string]$Message, [string]$Type = "INFO")
     $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
     $line = "[$timestamp] [$Type] $Message"
     try { Add-Content -Path $LogFile -Value $line -ErrorAction Stop } catch {}
-    # Always print to console so you can see exactly what's happening
     Write-Host "[$Type] $Message"
 }
 
-# Core function: Add or skip GPU preference
 function Add-GpuPreference {
     param(
         [string]$AppPath,
@@ -127,5 +124,4 @@ foreach ($pkg in $packages) {
     }
 }
 Write-Log "Processed $uwpProcessed UWP executables." "INFO"
-
 Write-Log "Script completed. Check Settings > System > Display > Graphics." "SUCCESS"
