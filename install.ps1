@@ -1,13 +1,3 @@
-<#
-.SYNOPSIS
-    SmartGpuPref v1.0 Interactive Installer
-.DESCRIPTION
-    Guides user through setup, runs visible initial scan, then creates hidden scheduled tasks for weekly sync.
-    Requires Administrator.
-.LINK
-    https://github.com/BibekG1/SmartGpuPref
-#>
-
 [CmdletBinding()]
 param(
     [string]$RepoOwner = "BibekG1",
@@ -17,39 +7,40 @@ param(
 )
 
 if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
-    Write-Host "❌ Please run as Administrator." -ForegroundColor Red; Read-Host "Press Enter to exit"; exit 1
+    Write-Host "[ERROR] Please run as Administrator. Right-click PowerShell -> Run as Administrator" -ForegroundColor Red
+    Read-Host "Press Enter to exit"
+    exit 1
 }
 
-Write-Host "`n🎮 SmartGpuPref v1.0 Setup" -ForegroundColor Cyan; Write-Host "━━━━━━━━━━━━━━━━━━━━━━━━━━━━" -ForegroundColor Gray
-
-$scopeChoice = Read-Host "`n📍 Scope: [1] Current user | [2] All users (default=1)"
+Write-Host "`n=== SmartGpuPref v1.1 Setup ===" -ForegroundColor Cyan
+$scopeChoice = Read-Host "`n[1] Current User | [2] All Users (default=1)"
 $scope = if ($scopeChoice -eq "2") { "AllUsers" } else { "CurrentUser" }
 
-$inclusionChoice = Read-Host "📦 Inclusion: [1] Apps only | [2] Apps+Services | [3] Everything (default=3)"
+$inclusionChoice = Read-Host "[1] Apps only | [2] Apps+Services | [3] Everything (default=3)"
 $inclusionLevel = if ($inclusionChoice -match '^[1-3]$') { [int]$inclusionChoice } else { 3 }
 
-$prefChoice = Read-Host "⚡ GPU Mode: [1] Power saving | [2] High performance (default=2)"
+$prefChoice = Read-Host "[1] Power saving | [2] High performance (default=2)"
 $preference = if ($prefChoice -eq "1") { 1 } else { 2 }
 
-Write-Host "`n✅ Choices: Scope=$scope | Level=$inclusionLevel | Mode=$(if($preference -eq 1){'Power saving'}else{'High performance'})" -ForegroundColor Green
+Write-Host "`n[INFO] Choices: Scope=$scope | Level=$inclusionLevel | Mode=$(if($preference -eq 1){'Power saving'}else{'High performance'})" -ForegroundColor Green
 
 $scriptUrl = "https://raw.githubusercontent.com/$RepoOwner/$RepoName/$Branch/src/SmartGpuPref.ps1"
 $scriptPath = Join-Path $InstallPath "SmartGpuPref.ps1"
 
-Write-Host "`n📥 Downloading SmartGpuPref..." -ForegroundColor Cyan
+Write-Host "`n[INFO] Downloading core script..." -ForegroundColor Cyan
 try {
     if (-not (Test-Path $InstallPath)) { New-Item -Path $InstallPath -ItemType Directory -Force | Out-Null }
     Invoke-WebRequest -Uri $scriptUrl -OutFile $scriptPath -UseBasicParsing -ErrorAction Stop
-    Write-Host "✅ Script downloaded" -ForegroundColor Green
-} catch { Write-Host "❌ Download failed: $_" -ForegroundColor Red; Read-Host "Press Enter to exit"; exit 1 }
+    Write-Host "[OK] Downloaded to $scriptPath" -ForegroundColor Green
+} catch { Write-Host "[ERROR] Download failed: $_" -ForegroundColor Red; exit 1 }
 
 $policy = Get-ExecutionPolicy -Scope CurrentUser -ErrorAction SilentlyContinue
 if ($policy -match 'Restricted|AllSigned') { Set-ExecutionPolicy RemoteSigned -Scope CurrentUser -Force -ErrorAction SilentlyContinue }
 
-Write-Host "`n🔍 Running initial scan (this will show on screen)..." -ForegroundColor Cyan
+Write-Host "`n[RUNNING] Initial scan (showing all output)..." -ForegroundColor Cyan
 & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $scriptPath -Scope $scope -InclusionLevel $inclusionLevel -Preference $preference -Verbose
 
-Write-Host "`n🗓️ Creating background sync tasks (hidden)..." -ForegroundColor Cyan
+Write-Host "`n[SETUP] Creating background sync tasks (hidden)..." -ForegroundColor Cyan
 try {
     Get-ScheduledTask -TaskName "SmartGpuPref*" -ErrorAction SilentlyContinue | Unregister-ScheduledTask -Confirm:$false
     
@@ -62,12 +53,10 @@ try {
     
     Register-ScheduledTask -TaskName "SmartGpuPref" -Action $action -Trigger $trigger1 -Principal $principal -Settings $settings -Force -ErrorAction Stop
     Register-ScheduledTask -TaskName "SmartGpuPref_WeeklySync" -Action $action -Trigger $trigger2 -Principal $principal -Settings $settings -Force -ErrorAction Stop
-    Write-Host "✅ Tasks created" -ForegroundColor Green
-} catch { Write-Host "❌ Task creation failed: $_" -ForegroundColor Red; Read-Host "Press Enter to exit"; exit 1 }
+    Write-Host "[OK] Scheduled tasks created." -ForegroundColor Green
+} catch { Write-Host "[ERROR] Task creation failed: $_" -ForegroundColor Red; exit 1 }
 
-Write-Host "`n📊 VERIFICATION:" -ForegroundColor Cyan
-Write-Host "• GUI: Settings > System > Display > Graphics > Scroll down to see apps" -ForegroundColor Gray
-Write-Host "• PS: Get-ItemProperty 'HKCU:\Software\Microsoft\DirectX\UserGpuPreferences' | Format-Table Name, GpuPreference" -ForegroundColor Gray
-Write-Host "• Log: notepad `"$env:TEMP\SmartGpuPref.log`"" -ForegroundColor Gray
-Write-Host "`n🎉 Installation complete! Background sync runs Sundays @ 3 AM." -ForegroundColor Green
+Write-Host "`n=== INSTALLATION COMPLETE ===" -ForegroundColor Green
+Write-Host "Logs saved to: $env:TEMP\SmartGpuPref.log" -ForegroundColor Gray
+Write-Host "Verify in: Settings > System > Display > Graphics" -ForegroundColor Gray
 Read-Host "Press Enter to exit"
