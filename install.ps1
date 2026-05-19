@@ -1,4 +1,3 @@
-[CmdletBinding()]
 param(
     [string]$RepoOwner = "BibekG1",
     [string]$RepoName  = "SmartGpuPref",
@@ -12,7 +11,7 @@ if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdenti
     exit 1
 }
 
-Write-Host "`n=== SmartGpuPref v1.1 Setup ===" -ForegroundColor Cyan
+Write-Host "`n=== SmartGpuPref v1.2 Setup ===" -ForegroundColor Cyan
 $scopeChoice = Read-Host "`n[1] Current User | [2] All Users (default=1)"
 $scope = if ($scopeChoice -eq "2") { "AllUsers" } else { "CurrentUser" }
 
@@ -38,11 +37,13 @@ $policy = Get-ExecutionPolicy -Scope CurrentUser -ErrorAction SilentlyContinue
 if ($policy -match 'Restricted|AllSigned') { Set-ExecutionPolicy RemoteSigned -Scope CurrentUser -Force -ErrorAction SilentlyContinue }
 
 Write-Host "`n[RUNNING] Initial scan (showing all output)..." -ForegroundColor Cyan
-& powershell.exe -NoProfile -ExecutionPolicy Bypass -File $scriptPath -Scope $scope -InclusionLevel $inclusionLevel -Preference $preference -Verbose
+& powershell.exe -NoProfile -ExecutionPolicy Bypass -File $scriptPath -Scope $scope -InclusionLevel $inclusionLevel -Preference $preference
 
 Write-Host "`n[SETUP] Creating background sync tasks (hidden)..." -ForegroundColor Cyan
 try {
-    Get-ScheduledTask -TaskName "SmartGpuPref*" -ErrorAction SilentlyContinue | Unregister-ScheduledTask -Confirm:$false
+    # Explicitly unregister both tasks to avoid wildcard issues
+    Get-ScheduledTask -TaskName "SmartGpuPref" -ErrorAction SilentlyContinue | Unregister-ScheduledTask -Confirm:$false
+    Get-ScheduledTask -TaskName "SmartGpuPref_WeeklySync" -ErrorAction SilentlyContinue | Unregister-ScheduledTask -Confirm:$false
     
     $args = "-WindowStyle Hidden -ExecutionPolicy Bypass -NoProfile -File `"$scriptPath`" -Scope $scope -InclusionLevel $inclusionLevel -Preference $preference"
     $action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument $args
