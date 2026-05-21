@@ -160,6 +160,3 @@ Found a bug? Want a feature?
 
 > 💬 **Final Thought**: SmartGpuPref was born from a simple observation: *"What if I just add everything to high-performance GPU preference?"* The result was a faster, smoother PC — and this tool is my way of sharing that discovery. If it helps even one person squeeze extra performance from their hardware, it's worth it. 🎮✨
 ```
-
-
-Let me know if you want to add a screenshot of Task Manager before/after, or a "Performance Tips" section next. 🎮✨
