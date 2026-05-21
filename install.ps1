@@ -45,8 +45,15 @@ try {
     Get-ScheduledTask -TaskName "SmartGpuPref" -ErrorAction SilentlyContinue | Unregister-ScheduledTask -Confirm:$false
     Get-ScheduledTask -TaskName "SmartGpuPref_WeeklySync" -ErrorAction SilentlyContinue | Unregister-ScheduledTask -Confirm:$false
     
-    $args = "-WindowStyle Hidden -ExecutionPolicy Bypass -NoProfile -File `"$scriptPath`" -Scope $scope -InclusionLevel $inclusionLevel -Preference $preference"
-    $action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument $args
+    # Create a tiny VBScript launcher to launch powershell.exe completely silent with SW_HIDE (0)
+    $launcherPath = Join-Path $InstallPath "SmartGpuPref_Launcher.vbs"
+    $vbsContent = @"
+CreateObject("WScript.Shell").Run "powershell.exe -NoProfile -ExecutionPolicy Bypass -File ""$scriptPath"" -Scope $scope -InclusionLevel $inclusionLevel -Preference $preference", 0, False
+"@
+    Set-Content -Path $launcherPath -Value $vbsContent -Force -Encoding ASCII
+    
+    # Scheduled Task executes wscript.exe (GUI application, spawns no console) with the launcher argument
+    $action = New-ScheduledTaskAction -Execute "wscript.exe" -Argument "`"$launcherPath`""
     $trigger1 = New-ScheduledTaskTrigger -AtLogOn; $trigger1.Delay = "PT2M"
     $trigger2 = New-ScheduledTaskTrigger -Weekly -DaysOfWeek Sunday -At 3am
     $principal = New-ScheduledTaskPrincipal -GroupId "BUILTIN\Administrators" -RunLevel Highest
